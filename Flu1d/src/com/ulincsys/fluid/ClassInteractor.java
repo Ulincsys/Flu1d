@@ -1,26 +1,47 @@
 package com.ulincsys.fluid;
 
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.URL;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class ClassInteractor {
 	public static Console console;
-	
 	public Map<String, Object> heap;
 	public Map<String, Class<?>> classes;
-	
+	public ArrayList<String> classPath;
 	public ArrayList<Object> results;
 	
-	public ClassInteractor() {
+	private ClassAdapter adapter;
+	
+	public ClassInteractor(Class<?>... defaultClassPath) {
 		heap = new HashMap<String, Object>();
 		classes = new HashMap<String, Class<?>>();
 		results = new ArrayList<Object>();
+		classPath = new ArrayList<String>();
 		
-		console = Main.console;
+		adapter = new ClassAdapter(this);
+		
+		for(Class<?> c : defaultClassPath) {
+			String Package = c.getPackageName();
+			if(!classPath.contains(Package)) {
+				classPath.add(c.getPackageName());
+			}
+		}
+		
+		for(String path : new String[] { "java.lang", "java.util", "java.math" }) {
+			if(!classPath.contains(path)) {
+				classPath.add(path);
+			}
+		}
+		
+		console = Fluid.console;
 	}
 	
 	public void injectClass(Class<?> c) {
@@ -137,27 +158,6 @@ public class ClassInteractor {
 		}
 		
 		return true;
-	}
-	
-	public void listHeap() {
-		console.log("Defined vars:");
-		heap.entrySet().forEach(entry -> {
-			console.formatln("%s: %s", entry.getKey(), entry.getValue().getClass().getName());
-		});
-	}
-	
-	public void listClasses() {
-		console.log("Imported classes:");
-		classes.entrySet().forEach(entry -> {
-			console.formatln("%s: %s", entry.getKey(), entry.getValue().getName());
-		});
-	}
-	
-	public void listResults() {
-		console.log("Accepted results:");
-		results.forEach(result -> {
-			console.formatln("%s: %s", result, result.getClass());
-		});
 	}
 }
 

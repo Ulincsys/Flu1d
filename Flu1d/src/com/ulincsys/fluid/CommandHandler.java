@@ -38,13 +38,13 @@ public class CommandHandler {
 				}
 				return Commands.CALL;
 			case HEAP:
-				C.listHeap();
+				listHeap();
 				return Commands.HEAP;
 			case CLASSES:
-				C.listClasses();
+				listClasses();
 				return Commands.CLASSES;
 			case RESULTS:
-				C.listResults();
+				listResults();
 				return Commands.RESULTS;
 			case EXIT:
 				return Commands.EXIT;
@@ -58,13 +58,16 @@ public class CommandHandler {
 	}
 	
 	private static void reflectiveImport(String classPath) {
-		ClassLoader loader = Main.class.getClassLoader();
-		
+		FluidClassLoader loader = new FluidClassLoader(C);
 		try {
-			Class<?> c = loader.loadClass(classPath);
-			C.injectClass(c);
-		} catch (ClassNotFoundException e) {
-			console.formatln("Unable to load class %s", classPath);
+			if(classPath.indexOf('.') == -1) {
+				C.injectClass(loader.loadSimpleClass(classPath));
+			} else {
+				C.injectClass(loader.loadClass(classPath));
+			}
+		} catch(Exception e) {
+			console.log("An exception occurred while loading class:");
+			console.log(e.getMessage());
 		}
 	}
 	
@@ -136,6 +139,27 @@ public class CommandHandler {
 				C.callMethod(classOrVar, method, classes.toArray(new Class<?>[0]), objects.toArray());
 			}
 		}
+	}
+	
+	private static void listHeap() {
+		console.log("Defined vars:");
+		C.heap.entrySet().forEach(entry -> {
+			console.formatln("%s: %s", entry.getKey(), entry.getValue().getClass().getName());
+		});
+	}
+	
+	private static void listClasses() {
+		console.log("Imported classes:");
+		C.classes.entrySet().forEach(entry -> {
+			console.formatln("%s: %s", entry.getKey(), entry.getValue().getName());
+		});
+	}
+	
+	private static void listResults() {
+		console.log("Accepted results:");
+		C.results.forEach(result -> {
+			console.formatln("%s: %s", result, result.getClass());
+		});
 	}
 }
 

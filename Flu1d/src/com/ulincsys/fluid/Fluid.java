@@ -1,6 +1,6 @@
 package com.ulincsys.fluid;
 
-public class Main {
+public class Fluid {
 	public static Console console;
 	public static ClassInteractor C;
 	
