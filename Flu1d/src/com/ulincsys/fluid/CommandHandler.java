@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.function.BiFunction;
 
 enum Commands {
-	EXIT, IMPORT, NEW, CALL, HEAP, CLASSES, RESULTS, NOP;
+	EXIT, IMPORT, NEW, CALL, HEAP, CLASSES, RESULTS, RELOAD, NOP;
 }
 
 public class CommandHandler {
@@ -17,22 +17,22 @@ public class CommandHandler {
 		try {
 			switch(Commands.valueOf(args[0].toUpperCase())) {
 			case IMPORT:
-				if(args.length != 2) {
-					console.log("Usage: import className");
+				if(args.length < 2) {
+					console.log("Usage: import <className> [as <alias>]");
 				} else {
-					reflectiveImport(args[1]);
+					reflectiveImport(args);
 				}
 				return Commands.IMPORT;
 			case NEW:
 				if(args.length < 3) {
-					console.log("Usage: new className varName [args...]");
+					console.log("Usage: new <className> <varName> [args...]");
 				} else {
 					reflectiveInstantiate(args[1], args[2], args);
 				}
 				return Commands.NEW;
 			case CALL:
 				if(args.length < 3) {
-					console.log("Usage: call classOrVarName methodName [args...]");
+					console.log("Usage: call <classOrVarName> <methodName> [args...]");
 				} else {
 					reflectiveCall(args[1], args[2], args);
 				}
@@ -46,6 +46,9 @@ public class CommandHandler {
 			case RESULTS:
 				listResults();
 				return Commands.RESULTS;
+			case RELOAD:
+				C = new ClassInteractor();
+				return Commands.RELOAD;
 			case EXIT:
 				return Commands.EXIT;
 			default:
@@ -57,17 +60,20 @@ public class CommandHandler {
 		return Commands.NOP;
 	}
 	
-	private static void reflectiveImport(String classPath) {
+	private static void reflectiveImport(String[] args) {
 		FluidClassLoader loader = new FluidClassLoader(C);
+		String classPath = args[1];
+		String alias = args.length == 4 ? args[3] : args[1];
 		try {
-			if(classPath.indexOf('.') == -1) {
-				C.injectClass(loader.loadSimpleClass(classPath));
-			} else {
-				C.injectClass(loader.loadClass(classPath));
-			}
+			C.injectClass(loader.loadUnknownClass(classPath), alias)
+			.onMessage(message -> {
+				console.log(message);
+			}).onTarget(target -> {
+				console.formatln("Redefining alias from %s", target.toString());
+			});
 		} catch(Exception e) {
 			console.log("An exception occurred while loading class:");
-			console.log(e.getMessage());
+			console.logException(e);
 		}
 	}
 	
@@ -97,7 +103,7 @@ public class CommandHandler {
 			} catch(Exception e) {
 				console.formatln("Error parsing argument\n"
 						+ "An exception occurred parsing %s as argument:", value);
-				console.log(e.getMessage());
+				console.logException(e);
 				return false;
 			}
 			return true;
@@ -122,7 +128,12 @@ public class CommandHandler {
 		ArrayList<Class<?>> classes = new ArrayList<Class<?>>();
 		
 		if(parseArgs(args, objects, classes)) {
-			C.instantiateClass(classPath, var, classes.toArray(new Class<?>[0]), objects.toArray());
+			C.instantiateClass(classPath, var, classes.toArray(new Class<?>[0]), objects.toArray())
+			.onMessage(message -> {
+				console.log(message);
+			}).onException(e -> {
+				console.logException(e);
+			});
 		}
 	}
 	
@@ -133,11 +144,18 @@ public class CommandHandler {
 		Boolean isClass = C.getClass(classOrVar) != null;
 		
 		if(parseArgs(args, objects, classes)) {
+			InteractionContext result;
 			if(isClass) {
-				C.callStaticMethod(classOrVar, method, classes.toArray(new Class<?>[0]), objects.toArray());
+				result = C.callStaticMethod(classOrVar, method, classes.toArray(new Class<?>[0]), objects.toArray());
 			} else {
-				C.callMethod(classOrVar, method, classes.toArray(new Class<?>[0]), objects.toArray());
+				result = C.callMethod(classOrVar, method, classes.toArray(new Class<?>[0]), objects.toArray());
 			}
+			
+			result.onMessage(message -> {
+				console.log(message);
+			}).onException(e -> {
+				console.logException(e);
+			});
 		}
 	}
 	

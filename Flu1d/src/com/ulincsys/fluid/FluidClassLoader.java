@@ -24,6 +24,14 @@ public class FluidClassLoader extends ClassLoader {
 		
 		throw new ClassNotFoundException("Class not found in path with simple name: " + forName);
 	}
+	
+	public Class<?> loadUnknownClass(String forName) throws ClassNotFoundException {
+		if(forName.indexOf('.') == -1) {
+			return loadSimpleClass(forName);
+		} else {
+			return loadClass(forName);
+		}
+	}
 }
 
 

@@ -53,6 +53,18 @@ public class Console extends Thread {
 	public void format(String message, Object... args) {
 		out.format(message, args);
 	}
+	
+	public void printStackTrace(StackTraceElement[] message) {
+		for(StackTraceElement element : message) {
+			log(element.toString());
+		}
+	}
+	
+	public void logException(Exception e) {
+		format("Exception %s: %s", e.getClass().getName(), e.getMessage());
+		log(e.getMessage());
+		printStackTrace(e.getStackTrace());
+	}
 }
 
 
