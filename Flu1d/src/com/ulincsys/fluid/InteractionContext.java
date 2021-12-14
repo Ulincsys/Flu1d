@@ -54,8 +54,22 @@ public class InteractionContext extends RuntimeException {
 		return exceptionContext;
 	}
 	
+	@Override
 	public String getMessage() {
 		return message.toString();
+	}
+	
+	@Override
+	public String getLocalizedMessage() {
+		if(hasExceptionContext()) {
+			return getExceptionContext().getMessage();
+		}
+		return null;
+	}
+	
+	@Override
+	public Exception getCause() {
+		return getExceptionContext();
 	}
 
 	public Object getTarget() {
@@ -249,13 +263,13 @@ public class InteractionContext extends RuntimeException {
 		}, Context.FAILURE);
 	}
 	
-	public InteractionContext onException(BiConsumer<InteractionContext, Exception> consumer) {
+	public InteractionContext onException(BiConsumer<InteractionContext, Exception> consumer) throws InteractionContext {
 		return onAnyContext(consume -> {
 			consumer.accept(this, getExceptionContext());
 		}, Context.EXCEPTION);
 	}
 	
-	public InteractionContext onException(Consumer<Exception> consumer) {
+	public InteractionContext onException(Consumer<Exception> consumer) throws InteractionContext {
 		return onAnyContext(consume -> {
 			consumer.accept(getExceptionContext());
 		}, Context.EXCEPTION);

@@ -61,7 +61,7 @@ public class ClassInteractor {
 		return new InteractionContext(String.format(format, args), false);
 	}
 	
-	// ----------------------------------------------------------------------------- INJECTING
+	// ----------------------------------------------------------------------------- MANAGING
 	
 	public InteractionContext injectClass(Class<?> c) {
 		return injectClass(c, c.getSimpleName()).onMessage((context, message) -> {
@@ -84,9 +84,17 @@ public class ClassInteractor {
 	public Class<?> getClass(String forName) {
 		return classes.get(forName);
 	}
+	
+	public Class<?> undefineClass(String forName) {
+		return classes.remove(forName);
+	}
 
 	public Object getVar(String forName) {
 		return heap.get(forName);
+	}
+	
+	public Object undefineVar(String forName) {
+		return heap.remove(forName);
 	}
 	
 	// ----------------------------------------------------------------------------- CALLING
@@ -156,19 +164,27 @@ public class ClassInteractor {
 		if(c == null) {
 			return failure("Error instantiating class %s, no class found with that name", forName);
 		}
-		
+
+		return instantiateClass(c, var, params, args);
+	}
+	
+	public InteractionContext instantiateClass(Class<?> c, String var, Class<?>[] params, Object[] args) {
 		try {
 			var R = success().context(c);
 			Constructor<?> constructor = c.getDeclaredConstructor(params);
 			Object o = constructor.newInstance(args);
 			Object prev = heap.put(var, o);
 			if(prev != null) {
-				return R.context("Redefining %s as %s", var, forName);
+				return R.context("Redefining %s as %s", var, c.getName());
 			}
 			return R;
 		} catch(Exception e) {
-			return failure("Error instantiating class %s", forName).context(e).context(c);
+			return failure("Error instantiating class %s", c.getName()).context(e).context(c);
 		}
+	}
+
+	public ClassAdapter getAdapter() {
+		return adapter;
 	}
 }
 

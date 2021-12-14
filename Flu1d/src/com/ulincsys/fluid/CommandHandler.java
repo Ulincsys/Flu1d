@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.function.BiFunction;
 
 enum Commands {
-	EXIT, IMPORT, NEW, CALL, HEAP, CLASSES, RESULTS, RELOAD, NOP;
+	EXIT, IMPORT, NEW, CALL, HEAP, CLASSES, RESULTS, RELOAD, ADAPT, NOP;
 }
 
 public class CommandHandler {
@@ -49,6 +49,13 @@ public class CommandHandler {
 			case RELOAD:
 				C = new ClassInteractor();
 				return Commands.RELOAD;
+			case ADAPT:
+				if(args.length < 3) {
+					console.log("Usage: adapt <className> <value>");
+				} else {
+					adaptClass(args[1], args[2]);
+				}
+				return Commands.ADAPT;
 			case EXIT:
 				return Commands.EXIT;
 			default:
@@ -73,6 +80,17 @@ public class CommandHandler {
 			});
 		} catch(Exception e) {
 			console.log("An exception occurred while loading class:");
+			console.logException(e);
+		}
+	}
+	
+	private static void adaptClass(String forName, String object) {
+		try {
+			Object o = C.getAdapter().adapt(object, forName);
+			console.log(o.getClass().toString());
+			console.log(String.valueOf(o));
+		} catch(Exception e) {
+			console.log("An exception occurred adapting class");
 			console.logException(e);
 		}
 	}

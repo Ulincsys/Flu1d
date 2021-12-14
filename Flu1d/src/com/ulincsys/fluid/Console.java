@@ -60,10 +60,14 @@ public class Console extends Thread {
 		}
 	}
 	
-	public void logException(Exception e) {
-		format("Exception %s: %s", e.getClass().getName(), e.getMessage());
-		log(e.getMessage());
+	public void logException(Throwable e) {
+		format("Exception %s: %s\n", e.getClass().getName(), e.getMessage());
 		printStackTrace(e.getStackTrace());
+		while(e.getCause() != null) {
+			log("Caused by:");
+			printStackTrace(e.getCause().getStackTrace());
+			e = e.getCause();
+		}
 	}
 }
 
