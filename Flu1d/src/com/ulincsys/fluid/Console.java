@@ -10,6 +10,8 @@ public class Console extends Thread {
 	InputStream in;
 	PrintStream out;
 	
+	BufferedReader reader;
+	
 	private String prompt = "Flu1d:~$ ";
 	
 	public Console() {
@@ -23,14 +25,26 @@ public class Console extends Thread {
 	
 	@Override
 	public void run() {
-		BufferedReader r = new BufferedReader(new InputStreamReader(in));
+		reader = new BufferedReader(new InputStreamReader(in));
 		try {
 			do {
 				out.print(prompt);
-			} while(CommandHandler.execute(r.readLine()) != Commands.EXIT);
+			} while(CommandHandler.execute(input()) != Commands.EXIT);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+		}
+	}
+	
+	public String input() throws IOException {
+		return reader.readLine();
+	}
+	
+	public String tryInput() {
+		try {
+			return input();
+		} catch(IOException e) {
+			return "";
 		}
 	}
 	
@@ -65,8 +79,9 @@ public class Console extends Thread {
 		printStackTrace(e.getStackTrace());
 		while(e.getCause() != null) {
 			log("Caused by:");
-			printStackTrace(e.getCause().getStackTrace());
 			e = e.getCause();
+			format("Exception %s: %s\n", e.getClass().getName(), e.getMessage());
+			printStackTrace(e.getStackTrace());
 		}
 	}
 }

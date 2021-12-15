@@ -1,15 +1,12 @@
 package com.ulincsys.fluid;
 
-import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.net.URL;
 import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.function.Function;
 
 public class ClassInteractor {
 	public Map<String, Object> heap;
@@ -52,7 +49,6 @@ public class ClassInteractor {
 		return new InteractionContext(String.format(format, args), true);
 	}
 	
-	@SuppressWarnings("unused")
 	private InteractionContext failure() {
 		return new InteractionContext(null, false);
 	}
@@ -97,7 +93,7 @@ public class ClassInteractor {
 		return heap.remove(forName);
 	}
 	
-	// ----------------------------------------------------------------------------- CALLING
+	// ----------------------------------------------------------------------------- INVOCATION
 	
 	public InteractionContext callMethod(String var, String name) {
 		return callMethod(var, name, new Class<?>[0], new Object[0]);
@@ -127,28 +123,43 @@ public class ClassInteractor {
 		return callDeclaredMethod(c, null, forName, name, params, args);
 	}
 	
-	private InteractionContext callDeclaredMethod(Class<?> c, Object o,
+	public InteractionContext callDeclaredMethod(Class<?> c, Object o,
 			String var, String name, Class<?>[] params, Object[] args) {
-		InteractionContext R = new InteractionContext()
-				.context(c).context(false);
+		
+		Method m;
+		try {
+			m = c.getDeclaredMethod(name, params);
+		} catch (NoSuchMethodException | SecurityException e) {
+			return failure("Error calling method %s on %s", name,
+					name != null ? name : c.getName()).context(e);
+		}
+		
+		return callDeclaredMethod(m, o, args, context -> {
+			return true;
+		});
+	}
+	
+	public InteractionContext callDeclaredMethod(Method m, Object o, Object[] args, Function<InteractionContext, Boolean> onContext) {
+		InteractionContext R = failure();
 		
 		try {
-			Method m = c.getDeclaredMethod(name, params);
 			Object result = m.invoke(o, args);
 			if(m.getReturnType() == void.class) {
 				R.context("Method execution concluded");
 			} else if(result == null) {
 				R.context("Method returned null");
 			} else {
-				results.add(result);
 				R.context("Method returned result").target(result);
+				if(onContext.apply(R)) {
+					results.add(result);
+				}
 			}
 			return R.context(true);
 		} catch (InvocationTargetException e) {
-			return R.context("An exception occurred during execution of method %s on %s", name, var)
+			return R.context("An exception occurred during execution of method %s", m.getName())
 					.context(e);
 		} catch(Exception e) {
-			return R.context("Error calling method %s on %s", name, var).context(e);
+			return R.context("Error calling method %s", m.getName()).context(e);
 		}
 	}
 	
@@ -173,11 +184,14 @@ public class ClassInteractor {
 			var R = success().context(c);
 			Constructor<?> constructor = c.getDeclaredConstructor(params);
 			Object o = constructor.newInstance(args);
-			Object prev = heap.put(var, o);
-			if(prev != null) {
-				return R.context("Redefining %s as %s", var, c.getName());
+			if(var != null) {
+				Object prev = heap.put(var, o);
+				if(prev != null) {
+					R.context("Redefining %s as %s", var, c.getName())
+					.previous(prev);
+				}
 			}
-			return R;
+			return R.target(o);
 		} catch(Exception e) {
 			return failure("Error instantiating class %s", c.getName()).context(e).context(c);
 		}

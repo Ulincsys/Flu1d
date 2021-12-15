@@ -4,7 +4,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 enum Context {
-	CLASS, EXCEPTION, MESSAGE, SUCCESS, FAILURE, TARGET;
+	CLASS, EXCEPTION, MESSAGE, SUCCESS, FAILURE, TARGET, PREVIOUS;
 }
 
 public class InteractionContext extends RuntimeException {
@@ -15,6 +15,7 @@ public class InteractionContext extends RuntimeException {
 	private StringBuilder message;
 	private Boolean success;
 	private Object target;
+	private Object previous;
 	
 	public InteractionContext() {
 		this(null, null, null, null);
@@ -76,6 +77,10 @@ public class InteractionContext extends RuntimeException {
 		return target;
 	}
 	
+	public Object getPrevious() {
+		return previous;
+	}
+
 	public Boolean isSuccess() {
 		return success;
 	}
@@ -98,6 +103,10 @@ public class InteractionContext extends RuntimeException {
 	
 	public Boolean hasTarget() {
 		return target != null;
+	}
+	
+	public Boolean hasPrevious() {
+		return previous != null;
 	}
 	
 	public InteractionContext context(String message) {
@@ -139,6 +148,12 @@ public class InteractionContext extends RuntimeException {
 		return this;
 	}
 	
+	public InteractionContext previous(Object o) {
+		previous = o;
+		
+		return this;
+	}
+	
 	private Object or(Object primary, Object secondary) {
 		if(primary == null) {
 			return secondary;
@@ -176,6 +191,8 @@ public class InteractionContext extends RuntimeException {
 			return hasSuccess() && isSuccess();
 		case TARGET:
 			return hasTarget();
+		case PREVIOUS:
+			return hasPrevious();
 		default:
 			return false;
 		}
@@ -285,6 +302,18 @@ public class InteractionContext extends RuntimeException {
 		return onAnyContext(consume -> {
 			consumer.accept(getTarget());
 		}, Context.TARGET);
+	}
+	
+	public InteractionContext onPrevious(BiConsumer<InteractionContext, Object> consumer) {
+		return onAnyContext(consume -> {
+			consumer.accept(this, getPrevious());
+		}, Context.PREVIOUS);
+	}
+	
+	public InteractionContext onPrevious(Consumer<Object> consumer) {
+		return onAnyContext(consume -> {
+			consumer.accept(getPrevious());
+		}, Context.PREVIOUS);
 	}
 }
 

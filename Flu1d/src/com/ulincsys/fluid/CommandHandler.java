@@ -86,7 +86,14 @@ public class CommandHandler {
 	
 	private static void adaptClass(String forName, String object) {
 		try {
-			Object o = C.getAdapter().adapt(object, forName);
+			Object o = C.getAdapter().adapt(object, forName, context -> {
+				console.log(context.getMessage());
+				console.format("Would you like to adapt with this method? [Y/n]:");
+				if(console.tryInput().trim().toLowerCase().startsWith("n")) {
+					return false;
+				}
+				return true;
+			});
 			console.log(o.getClass().toString());
 			console.log(String.valueOf(o));
 		} catch(Exception e) {
