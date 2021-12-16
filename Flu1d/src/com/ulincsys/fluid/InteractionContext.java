@@ -3,10 +3,63 @@ package com.ulincsys.fluid;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
+/**
+ * <p> The core operating structure of the InteractionContext. </p>
+ * 
+ * <p> This enum represents every possible context state within
+ * any given instance of InteractionContext. </p>
+ * 
+ * @see InteractionContext
+ * @see #CLASS
+ * @see #EXCEPTION
+ * @see #MESSAGE
+ * @see #SUCCESS
+ * @see #FAILURE
+ * @see #TARGET
+ * @see #PREVIOUS
+ * @author ulincsys
+ */
 enum Context {
-	CLASS, EXCEPTION, MESSAGE, SUCCESS, FAILURE, TARGET, PREVIOUS;
+	/**
+	 * Represents that an InteractionContext holds a reference to, and interacted with a Class at one point during execution.
+	 */
+	CLASS,
+	/**
+	 * Represents that an exception occurred during execution within the originating context, and is referenced by this InteractionContext.
+	 */
+	EXCEPTION,
+	/**
+	 * Represents that at least one message was generated during execution within the originating context, and is referenced by this InteractionContext.
+	 */
+	MESSAGE,
+	/**
+	 * Indicates that this context represents a successful action.
+	 */
+	SUCCESS,
+	/**
+	 * Indicates that this context represents a failed action.
+	 */
+	FAILURE,
+	/**
+	 * Represents that this context was assigned a target (or newly generated object) during execution, and is referenced by this InteractionContext.
+	 */
+	TARGET,
+	/**
+	 * Represents that a previous value was overwritten in the originating context, and is referenced by this InteractionContext.
+	 */
+	PREVIOUS;
 }
 
+/**
+ * This is a message passing class which communicates the state of any
+ * given originating context, and also serves as an exception carrier
+ * to bring exceptions from a lower context up to the calling context
+ * without the need to catch a throwable. This class extends
+ * RuntimeException, and so can be optionally thrown from any context.
+ * 
+ * @author ulincsys
+ * @see Context
+ */
 public class InteractionContext extends RuntimeException {
 	private static final long serialVersionUID = -132421980258494686L;
 	
@@ -17,26 +70,74 @@ public class InteractionContext extends RuntimeException {
 	private Object target;
 	private Object previous;
 	
+	/**
+	 * Instantiates a context without context.
+	 */
 	public InteractionContext() {
 		this(null, null, null, null);
 	}
 	
+	/**
+	 * Instantiates a context with a single message string.
+	 * 
+	 * @param message A string describing the context of this instance
+	 * @see Context#MESSAGE
+	 */
 	public InteractionContext(String message) {
 		this(message, null, null, null);
 	}
 	
+	/**
+	 * Instantiates a context with both a message and success or failure state.
+	 * 
+	 * @param message A string describing the context of this instance
+	 * @param success A boolean defining the success state of this context
+	 * @see Context#MESSAGE
+	 * @see Context#SUCCESS
+	 * @see Context#FAILURE
+	 */
 	public InteractionContext(String message, Boolean success) {
 		this(message, success, null, null);
 	}
 	
+	/**
+	 * Instantiates a context with both a message and a relevant Class.
+	 * 
+	 * @param message A string describing the context of this instance
+	 * @param c A Class relevant to this context
+	 * @see Context#MESSAGE
+	 * @see Context#CLASS
+	 */
 	public InteractionContext(String message, Class<?> c) {
 		this(message, null, c, null);
 	}
 	
+	/**
+	 * Instantiates a context with both a message and a relevant Exception.
+	 * @param message A string describing the context of this instance
+	 * @param e An Exception relevant to this context
+	 * @see Context#MESSAGE
+	 * @see Context#EXCEPTION
+	 */
 	public InteractionContext(String message, Exception e) {
 		this(message, null, null, e);
 	}
 	
+	/**
+	 * Instantiates a context with a message, a success state, a relevant Class,
+	 * and a relevant Exception.
+	 * 
+	 * <p> Note that not all context states are reachable with this constructor,
+	 * and additional contexts, such as {@link Context#TARGET} and
+	 * {@link Context#PREVIOUS}, must be set manually using {@link #target(Object)}
+	 * or {@link #previous(Object)} </p>
+	 * @param message A string describing the context of this instance
+	 * @param success A boolean defining the success state of this context
+	 * @param c A Class relevant to this context
+	 * @param e An Exception relevant to this context
+	 * 
+	 * @see Context
+	 */
 	public InteractionContext(String message, Boolean success, Class<?> c, Exception e) {
 		classContext = c;
 		exceptionContext = e;
@@ -198,12 +299,23 @@ public class InteractionContext extends RuntimeException {
 		}
 	}
 	
-	/* This function accepts a consumer which takes a ClassInteractorContext,
-	 * followed by a variable array of Context elements which determine under
-	 * which contexts the consumer will be executed. The ClassInteractorContext
-	 * passed to the consumer is the same as the one upon which the function
-	 * call was made. The consumer will be executed at most once, if and only
-	 * if at least one context in the provided array exists.
+	/**
+	 * This function accepts a consumer which takes an InteractionContext,
+	 * followed by a variadic array of Context elements that determines
+	 * under which contexts the consumer will be executed.
+	 * 
+	 * <p> The InteractionContext passed to the consumer is the same as
+	 * the one upon which the function call was made. The consumer will
+	 * be invoked at most once, if and only if at least one context in
+	 * the provided array exists within this InteractionContext. </p>
+	 * 
+	 * <p> If no Context is provided, the consumer will never be invoked.</p>
+	 * 
+	 * @param consumer The lambda with which to consume the context
+	 * @param context Zero or more contexts upon which to invoke the consumer
+	 * @return The context within which this invocation takes place
+	 * @see InteractionContext
+	 * @see Context
 	 */
 	public InteractionContext onAnyContext(Consumer<InteractionContext> consumer, Context... context) {
 		for(Context c : context) {
@@ -215,12 +327,23 @@ public class InteractionContext extends RuntimeException {
 		return this;
 	}
 	
-	/* This function accepts a consumer which takes a ClassInteractorContext,
-	 * followed by a variable array of Context elements which determine under
-	 * which contexts the consumer will be executed. The ClassInteractorContext
-	 * passed to the consumer is the same as the one upon which the function
-	 * call was made. The consumer will be executed at most once, if and only
-	 * if all contexts in the provided array exist.
+	/**
+	 * This function accepts a consumer which takes an InteractionContext,
+	 * followed by a variadic array of Context elements that determines
+	 * under which contexts the consumer will be executed.
+	 * 
+	 * <p> The InteractionContext passed to the consumer is the same as
+	 * the one upon which the function call was made. The consumer will
+	 * be invoked at most once, if and only if every context in the provided
+	 * array exists within this InteractionContext. </p>
+	 * 
+	 * <p> If no Context is provided, the consumer will never be invoked.</p>
+	 * 
+	 * @param consumer The lambda with which to consume the context
+	 * @param context Zero or more contexts upon which to invoke the consumer
+	 * @return The context within which this invocation takes place
+	 * @see InteractionContext
+	 * @see Context
 	 */
 	public InteractionContext onAllContexts(Consumer<InteractionContext> consumer, Context... context) {
 		for(Context c : context) {
