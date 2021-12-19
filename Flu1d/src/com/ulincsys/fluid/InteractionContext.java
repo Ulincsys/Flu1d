@@ -148,10 +148,16 @@ public class InteractionContext extends RuntimeException {
 		this.success = success;
 	}
 	
+	/**
+	 * @return Class relevant to this context, or null
+	 */
 	public Class<?> getClassContext() {
 		return classContext;
 	}
 	
+	/**
+	 * @return Exception relevant to this context, or null
+	 */
 	public Exception getExceptionContext() {
 		return exceptionContext;
 	}
@@ -174,42 +180,76 @@ public class InteractionContext extends RuntimeException {
 		return getExceptionContext();
 	}
 
+	/**
+	 * @return Target Object referenced by this context, or null
+	 */
 	public Object getTarget() {
 		return target;
 	}
 	
+	/**
+	 * @return Previous Object referenced by this context, or null
+	 */
 	public Object getPrevious() {
 		return previous;
 	}
 
+	/**
+	 * @return The boolean representing the success state of this
+	 * context, or null
+	 */
 	public Boolean isSuccess() {
 		return success;
 	}
 	
+	/**
+	 * @return True if this context references a Class, else false
+	 */
 	public Boolean hasClassContext() {
 		return classContext != null;
 	}
 	
+	/**
+	 * @return True if this context references an Exception, else false
+	 */
 	public Boolean hasExceptionContext() {
 		return exceptionContext != null;
 	}
 	
+	/**
+	 * @return True if this context references a success state, else false
+	 */
 	public Boolean hasSuccess() {
 		return success != null;
 	}
 	
+	/**
+	 * @return True if this context contains a detail message, else false
+	 */
 	public Boolean hasMessage() {
 		return message != null;
 	}
 	
+	/**
+	 * @return True if this context references a target Object, else false
+	 */
 	public Boolean hasTarget() {
 		return target != null;
 	}
 	
+	/**
+	 * @return True if this context references a previous Object, else false
+	 */
 	public Boolean hasPrevious() {
 		return previous != null;
 	}
 	
+	/**
+	 * Adds message context to this instance.
+	 * 
+	 * @param message The message context to add
+	 * @return The instance referenced
+	 */
 	public InteractionContext context(String message) {
 		if(this.message == null) {
 			this.message = new StringBuilder();
@@ -221,22 +261,51 @@ public class InteractionContext extends RuntimeException {
 		return this;
 	}
 	
+	/**
+	 * Adds formatted message context to this instance.
+	 * 
+	 * <p> The provided message string and arguments are processed with {@link String#format}
+	 * before being added to this instance.</p>
+	 * 
+	 * @param message The format string content 
+	 * @param args The arguments for the format string
+	 * @return The instance referenced
+	 * @see String#format(String, Object...)
+	 */
 	public InteractionContext context(String message, Object... args) {
 		return context(String.format(message, args));
 	}
 	
+	/**
+	 * Adds success context to this instance.
+	 * 
+	 * @param success The success context to add
+	 * @return The instance referenced
+	 */
 	public InteractionContext context(Boolean success) {
 		this.success = success;
 		
 		return this;
 	}
 	
+	/**
+	 * Adds Class context to this instance.
+	 * 
+	 * @param classContext The Class context to add
+	 * @return The instance referenced
+	 */
 	public InteractionContext context(Class<?> classContext) {
 		this.classContext = classContext;
 		
 		return this;
 	}
 	
+	/**
+	 * Adds Exception context to this instance.
+	 * 
+	 * @param exceptionContext The Exception context to add
+	 * @return The instance referenced
+	 */
 	public InteractionContext context(Exception exceptionContext) {
 		this.exceptionContext = exceptionContext;
 		

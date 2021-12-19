@@ -1,5 +1,10 @@
 package com.ulincsys.fluid;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -8,13 +13,18 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
+import javax.tools.JavaCompiler;
+import javax.tools.ToolProvider;
+
 public class ClassInteractor {
 	public Map<String, Object> heap;
 	public Map<String, Class<?>> classes;
 	public ArrayList<String> classPath;
 	public ArrayList<Object> results;
 	
+	private JavaCompiler compiler;
 	private ClassAdapter adapter;
+	private String[] defaultClassPath = { "java.lang", "java.util", "java.math" };
 	
 	public ClassInteractor(Class<?>... defaultClassPath) {
 		heap = new HashMap<String, Object>();
@@ -23,6 +33,7 @@ public class ClassInteractor {
 		classPath = new ArrayList<String>();
 		
 		adapter = new ClassAdapter(this);
+		compiler = ToolProvider.getSystemJavaCompiler();
 		
 		for(Class<?> c : defaultClassPath) {
 			String Package = c.getPackageName();
@@ -31,7 +42,7 @@ public class ClassInteractor {
 			}
 		}
 		
-		for(String path : new String[] { "java.lang", "java.util", "java.math" }) {
+		for(String path : this.defaultClassPath) {
 			if(!classPath.contains(path)) {
 				classPath.add(path);
 			}
@@ -196,9 +207,45 @@ public class ClassInteractor {
 			return failure("Error instantiating class %s", c.getName()).context(e).context(c);
 		}
 	}
+	
+	// ----------------------------------------------------------------------------- COMPILATION
+	
+	public InteractionContext compileFile(String input, String output) {
+		try {
+			FileInputStream in = new FileInputStream(input);
+			OutputStream out = new ByteArrayOutputStream();
+
+		} catch(Exception e) {
+			return failure("An exception occurred during compilation")
+					.context(e);
+		}
+		return failure();
+	}
+	
+	public InteractionContext compileClass(InputStream in, OutputStream out, OutputStream err, String... args) {
+		if(!hasCompiler()) {
+			return failure("Compilation is not available on this platform")
+					.context("Platform returned null when querying for available compiler, is a JDK installed?");
+		}
+		
+		try {
+			compiler.run(null, null, null, defaultClassPath);
+		} catch(Exception e) {
+			return failure("An exception occurred during compilation")
+					.context(e);
+		}
+		
+		return null;
+	}
+	
+	// ----------------------------------------------------------------------------- GETTING AND SETTING
 
 	public ClassAdapter getAdapter() {
 		return adapter;
+	}
+	
+	public Boolean hasCompiler() {
+		return compiler != null;
 	}
 }
 
