@@ -2,6 +2,7 @@ package com.ulincsys.fluid;
 
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * <p> The core operating structure of the InteractionContext. </p>
@@ -506,6 +507,10 @@ public class InteractionContext extends RuntimeException {
 		return onAnyContext(consume -> {
 			consumer.accept(getPrevious());
 		}, Context.PREVIOUS);
+	}
+	
+	public <T> T andFinally(Function<InteractionContext, T> function) {
+		return function.apply(this);
 	}
 }
 

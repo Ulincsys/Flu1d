@@ -3,6 +3,7 @@ package com.ulincsys.fluid;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Constructor;
@@ -25,8 +26,13 @@ public class ClassInteractor {
 	private JavaCompiler compiler;
 	private ClassAdapter adapter;
 	private String[] defaultClassPath = { "java.lang", "java.util", "java.math" };
+	private File compilationDir;
 	
-	public ClassInteractor(Class<?>... defaultClassPath) {
+	public ClassInteractor(Class<?>... defaultClassPath) throws InteractionContext {
+		this("compiledClasses", defaultClassPath);
+	}
+	
+	public ClassInteractor(String cmpDir, Class<?>... defaultClassPath) throws InteractionContext {
 		heap = new HashMap<String, Object>();
 		classes = new HashMap<String, Class<?>>();
 		results = new ArrayList<Object>();
@@ -34,6 +40,15 @@ public class ClassInteractor {
 		
 		adapter = new ClassAdapter(this);
 		compiler = ToolProvider.getSystemJavaCompiler();
+		compilationDir = new File(cmpDir);
+		
+		if(!compilationDir.exists() && !compilationDir.mkdir() || !compilationDir.canWrite()) {
+			if(hasCompiler()) {
+				throw new InteractionContext()
+				.context("Could not create or access provided compilation output directory")
+				.target(compilationDir);
+			}
+		}
 		
 		for(Class<?> c : defaultClassPath) {
 			String Package = c.getPackageName();
@@ -210,16 +225,14 @@ public class ClassInteractor {
 	
 	// ----------------------------------------------------------------------------- COMPILATION
 	
-	public InteractionContext compileFile(String input, String output) {
+	public InteractionContext compileClass(String inputFile) {
+		OutputStream out = new ByteArrayOutputStream();
 		try {
-			FileInputStream in = new FileInputStream(input);
-			OutputStream out = new ByteArrayOutputStream();
-
-		} catch(Exception e) {
-			return failure("An exception occurred during compilation")
+			return compileClass(null, out, out, "-d", compilationDir.getCanonicalPath(), inputFile);
+		} catch (IOException e) {
+			return failure("An exception occurred while referencing the compilation directory")
 					.context(e);
 		}
-		return failure();
 	}
 	
 	public InteractionContext compileClass(InputStream in, OutputStream out, OutputStream err, String... args) {
@@ -229,13 +242,19 @@ public class ClassInteractor {
 		}
 		
 		try {
-			compiler.run(null, null, null, defaultClassPath);
+			return new InteractionContext().target(compiler.run(in, out, err, args))
+					.context("Compilation completed")
+					.context(out instanceof ByteArrayOutputStream ?
+							ByteArrayOutputStream.class.cast(out).toString() :
+							"Output in provided OutputStream")
+					.onTarget((context, target) -> {
+						Integer result = Integer.class.cast(target);
+						context.context(result == 0 ? true : false);
+					});
 		} catch(Exception e) {
 			return failure("An exception occurred during compilation")
 					.context(e);
 		}
-		
-		return null;
 	}
 	
 	// ----------------------------------------------------------------------------- GETTING AND SETTING

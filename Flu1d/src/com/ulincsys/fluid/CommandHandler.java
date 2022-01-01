@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.function.BiFunction;
 
 enum Commands {
-	EXIT, IMPORT, NEW, CALL, HEAP, CLASSES, RESULTS, RELOAD, ADAPT, NOP;
+	EXIT, IMPORT, NEW, CALL, HEAP, CLASSES, RESULTS, RELOAD, ADAPT, COMPILE, NOP;
 }
 
 public class CommandHandler {
@@ -56,6 +56,13 @@ public class CommandHandler {
 					adaptClass(args[1], args[2]);
 				}
 				return Commands.ADAPT;
+			case COMPILE:
+				if(args.length < 2) {
+					console.log("Usage: compile <filename>");
+				} else {
+					compileFile(args[1]);
+				}
+				return Commands.COMPILE;
 			case EXIT:
 				return Commands.EXIT;
 			default:
@@ -65,6 +72,10 @@ public class CommandHandler {
 
 		}
 		return Commands.NOP;
+	}
+	
+	private static void compileFile(String filename) {
+		console.logException(C.compileClass(filename));
 	}
 	
 	private static void reflectiveImport(String[] args) {
