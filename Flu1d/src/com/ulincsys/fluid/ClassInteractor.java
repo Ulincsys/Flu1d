@@ -2,7 +2,6 @@ package com.ulincsys.fluid;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -100,7 +99,7 @@ public class ClassInteractor {
 			R.context("Alias invalid, the fully qualified name will be used.", alias);
 		}
 		
-		return success().context(c).target(classes.put(alias, c));
+		return R.context(c).target(classes.put(alias, c));
 	}
 	
 	public Class<?> getClass(String forName) {
@@ -120,6 +119,15 @@ public class ClassInteractor {
 	}
 	
 	// ----------------------------------------------------------------------------- INVOCATION
+	
+	public Object tryCall(Object o, String fn, Object... parameters) throws InteractionContext {
+		Class<?>[] classes = getClasses(parameters);
+		
+		return callDeclaredMethod(o.getClass(), o, null, fn, classes, parameters)
+				.onException((context, ex) -> {
+					throw context;
+				}).getTarget();
+	}
 	
 	public InteractionContext callMethod(String var, String name) {
 		return callMethod(var, name, new Class<?>[0], new Object[0]);
@@ -161,7 +169,7 @@ public class ClassInteractor {
 		}
 		
 		return callDeclaredMethod(m, o, args, context -> {
-			return true;
+			return false;
 		});
 	}
 	
@@ -265,6 +273,17 @@ public class ClassInteractor {
 	
 	public Boolean hasCompiler() {
 		return compiler != null;
+	}
+	
+	// ----------------------------------------------------------------------------- Utilities
+	
+	public static Class<?>[] getClasses(Object... objects) {
+		ArrayList<Class<?>> classes = new ArrayList<Class<?>>();
+		for(Object o : objects) {
+			classes.add(o.getClass());
+		}
+		
+		return classes.toArray(new Class<?>[objects.length]);
 	}
 }
 

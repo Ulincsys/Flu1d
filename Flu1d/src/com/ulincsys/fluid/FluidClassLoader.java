@@ -2,10 +2,15 @@ package com.ulincsys.fluid;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 
+/**
+ * Utility class for loading classes from multiple sources at runtime
+ * 
+ * @author ulincsys
+ * @see ClassInteractor
+ */
 public class FluidClassLoader extends ClassLoader {
 	ClassInteractor C;
 	
